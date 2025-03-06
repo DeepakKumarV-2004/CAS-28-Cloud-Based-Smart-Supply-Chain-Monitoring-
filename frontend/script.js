@@ -108,8 +108,7 @@ async function fetchAvailableStock() {
                     itemInfo.innerHTML = `${item.name}: ${item.quantity}`;
                     stockDiv.appendChild(itemInfo);
                 });
-                warehouseInfo.appendChild(itemInfo);
-                itemInfo.classList.add("stock-display");
+                stockDiv.classList.add("stock-display");
             }
         });
     } catch (error) {
