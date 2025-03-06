@@ -2,6 +2,8 @@ const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 const fs = require("fs");
 
 const app = express();
@@ -11,7 +13,8 @@ const wss = new WebSocket.Server({ server });
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 // Sample warehouse data
 let warehouses = [
@@ -28,8 +31,33 @@ function generateItems() {
     return itemNames.map(name => ({
         name,
         quantity: Math.floor(Math.random() * 100) + 10,
+        lastQuantity:0,
         history: []  // Store stock change history
     }));
+}
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+function sendEmailAlert(warehouse, product, stockChange) {
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: ADMIN_EMAIL,
+        subject: `Stock Alert: ${product} in ${warehouse}`,
+        text: `Sudden stock change detected in ${warehouse} for ${product}. Change: ${stockChange}`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.error("Error sending email:", error);
+        } else {
+            console.log("Email sent:", info.response);
+        }
+    });
 }
 
 // WebSocket connection for real-time updates
@@ -45,18 +73,22 @@ wss.on("connection", (ws) => {
                 let change = Math.floor(Math.random() * 21) - 10;
                 let newQuantity = Math.max(0, item.quantity + change);
 
+                
+                // Trigger alert if stock is below 30
+                if (newQuantity < 30) {
+                    alerts.push({ warehouse: warehouse.name, product: item.name, stock: newQuantity });
+                }
+                if(Math.abs(newQuantity - item.quantity)>20){
+                    alerts.push({warehouse:warehouse.name,product:item.name,stockchange:change});
+                    sendEmailAlert(warehouse.name,item.name,change);
+                }
                 item.history.push({ change, newQuantity, timestamp: new Date().toISOString() });
 
                 if (item.history.length > 10) {
                     item.history.shift();
                 }
-
+                item.lastQuantity = item.quantity;
                 item.quantity = newQuantity;
-
-                // Trigger alert if stock is below 30
-                if (newQuantity < 30) {
-                    alerts.push({ warehouse: warehouse.name, product: item.name, stock: newQuantity });
-                }
             });
 
             updates.push({ warehouse: warehouse.name, products: warehouse.items });
