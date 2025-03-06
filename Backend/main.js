@@ -5,6 +5,8 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 const fs = require("fs");
+const PDFDocument = require("pdfkit");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -44,11 +46,32 @@ const transporter = nodemailer.createTransport({
 });
 
 function sendEmailAlert(warehouse, product, stockChange) {
+    const subject = `⚠ Urgent Stock Alert: ${product} in ${warehouse}`;
+    
+    const body = `
+        Dear Admin,
+
+        A significant stock change has been detected in ${warehouse} for the product "${product}".
+
+        📌 Stock Change Details:
+        - Warehouse: ${warehouse}
+        - Product: ${product}
+        - Stock Change: ${stockChange}
+        - Timestamp: ${new Date().toLocaleString()}
+
+        ${stockChange < 0 ? "⚠ This might indicate high demand or potential stock misplacement." : "📦 Restocking detected."}
+
+        Please review and take necessary action.
+
+        Best regards,
+        Smart Supply Chain Monitoring System
+    `;
+
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: ADMIN_EMAIL,
-        subject: `Stock Alert: ${product} in ${warehouse}`,
-        text: `Sudden stock change detected in ${warehouse} for ${product}. Change: ${stockChange}`
+        subject,
+        text: body
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -82,6 +105,11 @@ wss.on("connection", (ws) => {
                     alerts.push({warehouse:warehouse.name,product:item.name,stockchange:change});
                     sendEmailAlert(warehouse.name,item.name,change);
                 }
+                if(newQuantity ==0){
+                    alerts.push({ warehouse: warehouse.name, product: item.name, stock: newQuantity });
+                    sendEmailAlert(warehouse.name,item.name,newQuantity);
+                }
+
                 item.history.push({ change, newQuantity, timestamp: new Date().toISOString() });
 
                 if (item.history.length > 10) {
@@ -113,10 +141,38 @@ app.get("/available-stock", (req, res) => {
 });
 
 // Endpoint to download stock analysis as JSON
+
 app.get("/download-stock", (req, res) => {
-    const filePath = "./stock_analysis.json";
-    fs.writeFileSync(filePath, JSON.stringify(warehouses, null, 2));
-    res.download(filePath);
+    const doc = new PDFDocument();
+    const fileName = "stock_report.pdf";
+    const filePath = path.join(__dirname, fileName);
+
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+    res.setHeader("Content-Type", "application/pdf");
+
+    doc.pipe(res); // Stream PDF directly to response
+
+    // Load a custom font (Ensure the .ttf file exists in your project)
+    const fontPath = path.join(__dirname, "fonts", "NotoSans-Regular.ttf");
+    if (fs.existsSync(fontPath)) {
+        doc.font(fontPath);
+    } else {
+        doc.font("Helvetica"); // Fallback to Helvetica
+    }
+
+    doc.fontSize(18).text(" Stock Report", { align: "center" });
+    doc.moveDown();
+
+    warehouses.forEach((warehouse) => {
+        doc.fontSize(14).text(`$$ ${warehouse.name} (${warehouse.location})`);
+        doc.moveDown(0.5);
+        warehouse.items.forEach((item) => {
+            doc.fontSize(12).text(`- ${item.name}: ${item.quantity}`);
+        });
+        doc.moveDown();
+    });
+
+    doc.end();
 });
 
 // Start server
