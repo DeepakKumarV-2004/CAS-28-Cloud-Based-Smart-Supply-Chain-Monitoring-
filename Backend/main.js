@@ -34,7 +34,7 @@ function generateItems() {
         name,
         quantity: Math.floor(Math.random() * 100) + 10,
         lastQuantity:0,
-        history: []  // Store stock change history
+        history: [] 
     }));
 }
 const transporter = nodemailer.createTransport({
@@ -96,8 +96,6 @@ wss.on("connection", (ws) => {
                 let change = Math.floor(Math.random() * 21) - 10;
                 let newQuantity = Math.max(0, item.quantity + change);
 
-                
-                // Trigger alert if stock is below 30
                 if (newQuantity < 30) {
                     alerts.push({ warehouse: warehouse.name, product: item.name, stock: newQuantity });
                 }
@@ -150,14 +148,13 @@ app.get("/download-stock", (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
     res.setHeader("Content-Type", "application/pdf");
 
-    doc.pipe(res); // Stream PDF directly to response
+    doc.pipe(res);
 
-    // Load a custom font (Ensure the .ttf file exists in your project)
     const fontPath = path.join(__dirname, "fonts", "NotoSans-Regular.ttf");
     if (fs.existsSync(fontPath)) {
         doc.font(fontPath);
     } else {
-        doc.font("Helvetica"); // Fallback to Helvetica
+        doc.font("Helvetica");
     }
 
     doc.fontSize(18).text(" Stock Report", { align: "center" });
