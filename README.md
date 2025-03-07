@@ -8,27 +8,27 @@ This is a Cloud-Based Smart Supply Chain Monitoring System (SICS03) that provide
 ## 🚀 Features
 
 
-** 📊 Real-time stock monitoring using WebSockets.
+* 📊 Real-time stock monitoring using WebSockets.
 
-** 🔔 Automated alerts for low stock levels and sudden changes.
+* 🔔 Automated alerts for low stock levels and sudden changes.
 
-** 📧 Email notifications for significant stock variations.
+* 📧 Email notifications for significant stock variations.
 
-** 📜 PDF stock report generation for download.
+* 📜 PDF stock report generation for download.
 
-** 🏢 Warehouse switching for better visualization.
+* 🏢 Warehouse switching for better visualization.
 
-** 🔄 Historical stock data tracking.
+* 🔄 Historical stock data tracking.
 
 ## 🛠️ Tech Stack
 
-** Backend: Node.js, Express.js, WebSockets, MySQL
+* Backend: Node.js, Express.js, WebSockets, MySQL
 
-** Frontend: HTML, CSS, JavaScript, Chart.js
+* Frontend: HTML, CSS, JavaScript, Chart.js
 
-** Email Service: Nodemailer (Gmail SMTP)
+* Email Service: Nodemailer (Gmail SMTP)
 
-** PDF Generation: PDFKit
+* PDF Generation: PDFKit
 
 # 📂 Installation & Setup
 
